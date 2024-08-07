@@ -9,9 +9,23 @@ import en from '@angular/common/locales/en';
 import { FormsModule } from '@angular/forms';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideHttpClient } from '@angular/common/http';
+import { AuthGuard } from './core/guard/auth.guard';
+import { NoAuthGuard } from './core/guard/no-auth.guard';
+import { RedirectGuard } from './core/guard/redirect.guard';
 
 registerLocaleData(en);
 
 export const appConfig: ApplicationConfig = {
-  providers: [provideZoneChangeDetection({ eventCoalescing: true }), provideRouter(routes), provideClientHydration(), provideNzI18n(en_US), importProvidersFrom(FormsModule), provideAnimationsAsync(), provideHttpClient()]
+  providers: [
+  provideZoneChangeDetection({ eventCoalescing: true }),
+  provideRouter(routes),
+  provideClientHydration(),
+  provideNzI18n(en_US),
+  importProvidersFrom(FormsModule),
+  provideAnimationsAsync(),
+  provideHttpClient(),
+  NoAuthGuard,
+  AuthGuard,
+  RedirectGuard
+]
 };
