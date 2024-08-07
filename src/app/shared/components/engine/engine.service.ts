@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { isPlatformBrowser } from '@angular/common';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 
 @Injectable({ providedIn: 'root' })
 export class EngineService implements OnDestroy {
@@ -39,7 +40,7 @@ export class EngineService implements OnDestroy {
       this.initializeCamera();
       this.initializeLight();
       this.initializeControls();
-      this.loadGLTFModel('assets/mainTree.glb');
+      this.loadOBJModelOBJLoader('assets/model.obj');
       this.animate();
       this.addResizeListener();
     }
@@ -57,24 +58,42 @@ export class EngineService implements OnDestroy {
   private initializeScene(): void {
     this.scene = new THREE.Scene();
   }
+  mainUnit = 0.01;
+  near = this.convertToUnit(this.mainUnit)
+  far = this.convertToUnit(10000)
+  aspect: number = 0;
+  fov: number = 75;
+  defaultFov: number = 75;
 
   private initializeCamera(): void {
-    this.camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
-    this.camera.position.set(0, 7, 16);
-    this.camera.lookAt(10, 0, 0);
+    // กำหนดค่าตัวแปร
+    const fov = this.fov; // มุมมองในแนวทแยงมุม
+    const aspect = window.innerWidth / window.innerHeight; // อัตราส่วนความกว้างต่อความสูง
+    const near = this.near; // ระยะทางที่ใกล้ที่สุด
+    const far = this.far; // ระยะทางที่ไกลที่สุด
+  
+    // สร้างกล้อง PerspectiveCamera ด้วยค่าที่กำหนด
+    this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    
+    // ตั้งค่าตำแหน่งและทิศทางการมองของกล้อง
+    this.camera.position.set(-10, -2, 16); // ตั้งค่าตำแหน่งกล้อง
+    this.camera.lookAt(10, 0, 0); // ตั้งค่าทิศทางการมองของกล้อง
+    
+    // เพิ่มกล้องเข้าไปในฉาก
     this.scene.add(this.camera);
   }
-
   private initializeLight(): void {
     this.light = new THREE.AmbientLight(0x404040);
     this.light.position.set(0, 2, 10);
     this.scene.add(this.light);
   }
+
+    /**
+ * @ConvertToUnit use for convert meter to centimeter units
+ * @parameter meter = meter unit */
+    convertToUnit(meter: number) {
+      return meter / this.mainUnit;
+    }
 
   private initializeControls(): void {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -87,19 +106,41 @@ export class EngineService implements OnDestroy {
     this.controls.rotateSpeed = 1.0;
   }
 
-  private loadGLTFModel(path: string): void {
-    const loader = new GLTFLoader();
+  // private loadGLTFModel(path: string): void {
+  //   const loader = new GLTFLoader();
+  //   loader.load(
+  //     path,
+  //     (gltf) => {
+  //       const model = gltf.scene;
+  //       model.position.set(0, 0, 0);
+  //       model.scale.set(0.5, 0.5, 0.5);
+  //       this.scene.add(model);
+  //     },
+  //     undefined,
+  //     (error) => {
+  //       console.error('Error loading GLTF model:', error);
+  //     }
+  //   );
+  // }
+
+  private loadOBJModelOBJLoader(path: string): void {
+    const loader = new OBJLoader();
+    
     loader.load(
       path,
-      (gltf) => {
-        const model = gltf.scene;
-        model.position.set(0, 0, 0);
-        model.scale.set(0.5, 0.5, 0.5);
-        this.scene.add(model);
+      (object) => {
+        // ปรับขนาดของโมเดลถ้าจำเป็น
+        object.scale.set(1, 1, 1);
+  
+        // เพิ่มโมเดลลงในฉาก
+        this.scene.add(object);
+        
+        // อัพเดตการเรนเดอร์
+        this.animate();
       },
       undefined,
       (error) => {
-        console.error('Error loading GLTF model:', error);
+        console.error('An error happened', error);
       }
     );
   }
