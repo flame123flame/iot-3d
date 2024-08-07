@@ -39,10 +39,12 @@ export class EngineService implements OnDestroy {
       this.initializeScene();
       this.initializeCamera();
       this.initializeLight();
+      this.initGround();
       this.initializeControls();
       this.loadOBJModel('assets/model.obj');
-      this.animate();
+      // this.animate();
       this.addResizeListener();
+      this.onTick();
     }
   }
 
@@ -74,8 +76,7 @@ export class EngineService implements OnDestroy {
     const far = this.far;
   
     this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this.camera.position.set(-10, -2, 16);
-    this.camera.lookAt(10, 0, 0);
+    this.camera.position.set(-120, 100, 140);
     this.scene.add(this.camera);
   }
 
@@ -114,9 +115,9 @@ export class EngineService implements OnDestroy {
       path,
       (object) => {
         this.model = object; // เก็บโมเดล
-        object.scale.set(1, 1, 1);
+        object.scale.set(1, 0.8, 1);
         this.scene.add(object);
-        this.animate(); // เรียกใช้งานการหมุน
+        // this.animate(); // เรียกใช้งานการหมุน
       },
       undefined,
       (error) => {
@@ -168,4 +169,41 @@ export class EngineService implements OnDestroy {
       window.addEventListener('resize', this.resizeHandler);
     }
   }
+
+  private initGround() {
+    const groundSize = {
+      width: this.convertToUnit(10),
+      height: this.convertToUnit(0),
+      depth: this.convertToUnit(10)
+    }
+    const texture = new THREE.TextureLoader().load('assets/grasslight-big.jpg')
+    texture.wrapS = THREE.RepeatWrapping
+    texture.wrapT = THREE.RepeatWrapping
+    texture.repeat.set(100, 100)
+    const groundProperty = {
+      geometry: new THREE.BoxGeometry(groundSize.width, groundSize.height, groundSize.depth),
+      material: new THREE.MeshBasicMaterial({ map: texture }),
+    }
+    const ground = new THREE.Mesh(groundProperty.geometry, groundProperty.material)
+    ground.position.x = 0
+    ground.position.y = 0
+    ground.position.z = 0
+    this.scene.add(ground)
+  }
+
+  private detectCameraPosition() {
+    if (this.camera.position.y < 2) {
+      this.camera.position.y = 2;
+    }
+  }
+  
+  private onTick() {
+    this.controls.update();
+    this.detectCameraPosition();
+    if (this.renderer) {
+      this.renderer.render(this.scene, this.camera);
+    }
+    window.requestAnimationFrame(() => this.onTick());
+  }
+
 }
