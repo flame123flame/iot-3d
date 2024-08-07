@@ -1,6 +1,5 @@
-import { ElementRef, Inject, Injectable, NgZone, OnDestroy, OnInit, PLATFORM_ID } from '@angular/core';
+import { ElementRef, Inject, Injectable, NgZone, OnDestroy, PLATFORM_ID } from '@angular/core';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { isPlatformBrowser } from '@angular/common';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
@@ -14,6 +13,7 @@ export class EngineService implements OnDestroy {
   private light!: THREE.AmbientLight;
   private controls!: OrbitControls;
   private frameId?: number;
+  private model!: THREE.Object3D; // ตัวแปรเก็บโมเดล
 
   constructor(private ngZone: NgZone, @Inject(PLATFORM_ID) private platformId: Object) {}
 
@@ -40,7 +40,7 @@ export class EngineService implements OnDestroy {
       this.initializeCamera();
       this.initializeLight();
       this.initializeControls();
-      this.loadOBJModelOBJLoader('assets/model.obj');
+      this.loadOBJModel('assets/model.obj');
       this.animate();
       this.addResizeListener();
     }
@@ -53,47 +53,48 @@ export class EngineService implements OnDestroy {
       antialias: true,
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setClearColor(0x8B4513, 0); 
   }
 
   private initializeScene(): void {
     this.scene = new THREE.Scene();
   }
+  
   mainUnit = 0.01;
-  near = this.convertToUnit(this.mainUnit)
-  far = this.convertToUnit(10000)
+  near = this.convertToUnit(this.mainUnit);
+  far = this.convertToUnit(10000);
   aspect: number = 0;
   fov: number = 75;
   defaultFov: number = 75;
 
   private initializeCamera(): void {
-    // กำหนดค่าตัวแปร
-    const fov = this.fov; // มุมมองในแนวทแยงมุม
-    const aspect = window.innerWidth / window.innerHeight; // อัตราส่วนความกว้างต่อความสูง
-    const near = this.near; // ระยะทางที่ใกล้ที่สุด
-    const far = this.far; // ระยะทางที่ไกลที่สุด
+    const fov = this.fov;
+    const aspect = window.innerWidth / window.innerHeight;
+    const near = this.near;
+    const far = this.far;
   
-    // สร้างกล้อง PerspectiveCamera ด้วยค่าที่กำหนด
     this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    
-    // ตั้งค่าตำแหน่งและทิศทางการมองของกล้อง
-    this.camera.position.set(-10, -2, 16); // ตั้งค่าตำแหน่งกล้อง
-    this.camera.lookAt(10, 0, 0); // ตั้งค่าทิศทางการมองของกล้อง
-    
-    // เพิ่มกล้องเข้าไปในฉาก
+    this.camera.position.set(-10, -2, 16);
+    this.camera.lookAt(10, 0, 0);
     this.scene.add(this.camera);
   }
+
   private initializeLight(): void {
     this.light = new THREE.AmbientLight(0x404040);
-    this.light.position.set(0, 2, 10);
     this.scene.add(this.light);
+  
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(10, 10, 10);
+    this.scene.add(directionalLight);
+  }
+  
+  convertToUnit(meter: number): number {
+    return meter / this.mainUnit;
   }
 
-    /**
- * @ConvertToUnit use for convert meter to centimeter units
- * @parameter meter = meter unit */
-    convertToUnit(meter: number) {
-      return meter / this.mainUnit;
-    }
+  degToRad(degrees: number): number {
+    return degrees * (Math.PI / 180);
+  }
 
   private initializeControls(): void {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -106,37 +107,16 @@ export class EngineService implements OnDestroy {
     this.controls.rotateSpeed = 1.0;
   }
 
-  // private loadGLTFModel(path: string): void {
-  //   const loader = new GLTFLoader();
-  //   loader.load(
-  //     path,
-  //     (gltf) => {
-  //       const model = gltf.scene;
-  //       model.position.set(0, 0, 0);
-  //       model.scale.set(0.5, 0.5, 0.5);
-  //       this.scene.add(model);
-  //     },
-  //     undefined,
-  //     (error) => {
-  //       console.error('Error loading GLTF model:', error);
-  //     }
-  //   );
-  // }
-
-  private loadOBJModelOBJLoader(path: string): void {
+  private loadOBJModel(path: string): void {
     const loader = new OBJLoader();
     
     loader.load(
       path,
       (object) => {
-        // ปรับขนาดของโมเดลถ้าจำเป็น
+        this.model = object; // เก็บโมเดล
         object.scale.set(1, 1, 1);
-  
-        // เพิ่มโมเดลลงในฉาก
         this.scene.add(object);
-        
-        // อัพเดตการเรนเดอร์
-        this.animate();
+        this.animate(); // เรียกใช้งานการหมุน
       },
       undefined,
       (error) => {
@@ -149,8 +129,15 @@ export class EngineService implements OnDestroy {
     if (isPlatformBrowser(this.platformId)) {
       this.ngZone.runOutsideAngular(() => {
         this.frameId = requestAnimationFrame(() => this.animate());
+        this.updateRotation(); // อัปเดตการหมุน
         this.render();
       });
+    }
+  }
+
+  private updateRotation(): void {
+    if (this.model) {
+      this.model.rotation.y += 0.001; // ลดความเร็วในการหมุน
     }
   }
 
