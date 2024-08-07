@@ -11,6 +11,11 @@ export const routes: Routes = [
       canActivate: [NoAuthGuard],
     },
     {
+        path: "home",
+        loadChildren: () => import("./modules/dashboard/dashboard.routes"),
+        canActivate: [NoAuthGuard],
+      },
+    {
       path: '403',
       canActivate: [NoAuthGuard],
       loadComponent: () => import('./core/common/403/403.component').then(c => c.Exception403Component)
