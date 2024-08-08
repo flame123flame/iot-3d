@@ -1,0 +1,20 @@
+.three-d-container {
+    height: 100% !important;
+    width: 10% !important;
+    position: relative;
+    background-color: transparent;
+    border-radius: 6px;
+    padding: 0;
+    margin: 0;
+}
+
+.opacity-container {
+    position: absolute;
+    top: 30px;
+    right: 0;
+    width: 100%;
+    border-radius: 6px;
+    padding: 5px 15px 5px 15px;
+    border: 1px solid #d9d9d9;
+}
+

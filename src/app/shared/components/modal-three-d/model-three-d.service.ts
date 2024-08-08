@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { isPlatformBrowser } from '@angular/common';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { Group, Object3DEventMap } from 'three';
 
 @Injectable({ providedIn: 'root' })
 export class ModelThreeDService implements OnDestroy {
@@ -14,8 +15,9 @@ export class ModelThreeDService implements OnDestroy {
   private controls!: OrbitControls;
   private frameId?: number;
   private model!: THREE.Object3D;
+  buildingModel!: Group<Object3DEventMap>;
 
-  constructor(private ngZone: NgZone, @Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(private ngZone: NgZone, @Inject(PLATFORM_ID) private platformId: Object) { }
 
   ngOnDestroy(): void {
     if (isPlatformBrowser(this.platformId)) {
@@ -39,13 +41,24 @@ export class ModelThreeDService implements OnDestroy {
       this.initializeScene();
       this.initializeCamera();
       this.initializeLight();
-      // this.initGround();
+      this.initGround();
       this.initializeControls();
       this.loadOBJModel('assets/model.obj');
       // this.animate();
       this.addResizeListener();
       this.onTick();
     }
+  }
+
+  changeOpacityBuildingModel(value: number) {
+    if (!this.buildingModel) return;
+
+    this.buildingModel.traverse((item: any) => {
+      if (item.isMesh) {
+        if (item.material.opacity === value) return;
+        item.material.opacity = value / 100;
+      }
+    })
   }
 
   private initializeRenderer(): void {
@@ -55,13 +68,14 @@ export class ModelThreeDService implements OnDestroy {
       antialias: true,
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setClearColor(0x8B4513, 0); 
+    this.renderer.setClearColor(0x000000, 0);
   }
 
   private initializeScene(): void {
     this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x2e2a2a);
   }
-  
+
   mainUnit = 0.01;
   near = this.convertToUnit(this.mainUnit);
   far = this.convertToUnit(10000);
@@ -74,21 +88,46 @@ export class ModelThreeDService implements OnDestroy {
     const aspect = window.innerWidth / window.innerHeight;
     const near = this.near;
     const far = this.far;
-  
+
     this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
     this.camera.position.set(-120, 100, 140);
     this.scene.add(this.camera);
   }
 
   private initializeLight(): void {
-    this.light = new THREE.AmbientLight(0x404040);
-    this.scene.add(this.light);
-  
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(10, 10, 10);
-    this.scene.add(directionalLight);
+    // this.light = new THREE.AmbientLight(0x000000);
+    // this.scene.add(this.light);
+
+    // const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    // directionalLight.position.set(10, 10, 10);
+    // this.scene.add(directionalLight);
+
+      // Ambient light
+      this.light = new THREE.AmbientLight(0x404040); // Soft white light
+      this.scene.add(this.light);
+    
+      // Directional light (simulates sunlight)
+      const sunlight = new THREE.DirectionalLight(0xffffff, 1.0); // White light with intensity 1.0
+      sunlight.position.set(50, 50, 50); // Position the light
+      sunlight.castShadow = true; // Enable shadows
+    
+      // Configure the shadow properties for the sunlight
+      sunlight.shadow.mapSize.width = 2048; // Shadow map width
+      sunlight.shadow.mapSize.height = 2048; // Shadow map height
+      sunlight.shadow.camera.near = 0.5; // Near plane of shadow camera
+      sunlight.shadow.camera.far = 500; // Far plane of shadow camera
+    
+      this.scene.add(sunlight);
+    
+      // Add a helper to visualize the directional light
+      const lightHelper = new THREE.DirectionalLightHelper(sunlight, 5);
+      this.scene.add(lightHelper);
+    
+      // Add a helper to visualize the shadow camera
+      const shadowCameraHelper = new THREE.CameraHelper(sunlight.shadow.camera);
+      this.scene.add(shadowCameraHelper);
   }
-  
+
   convertToUnit(meter: number): number {
     return meter / this.mainUnit;
   }
@@ -110,21 +149,27 @@ export class ModelThreeDService implements OnDestroy {
 
   private loadOBJModel(path: string): void {
     const loader = new OBJLoader();
-    
+
     loader.load(
       path,
       (object) => {
         this.model = object;
-        object.scale.set(0.6, 0.6, 0.6);
-
+        object.scale.set(0.5, 0.7, 0.5);
+        this.buildingModel = object;
+        object.traverse((item: any) => {
+          if (item.isMesh) {
+            item.material.transparent = true;
+            item.material.opacity = 1;
+          }
+        });
         // Calculate the bounding box to find the center
         const boundingBox = new THREE.Box3().setFromObject(object);
         const center = new THREE.Vector3();
         boundingBox.getCenter(center);
-        
+
         // Move the object to the center of the scene
         object.position.sub(center);
-        
+
         this.scene.add(object);
 
         // Log the position of the object
@@ -134,8 +179,8 @@ export class ModelThreeDService implements OnDestroy {
       },
       undefined,
       // Called when loading has errors
-      function ( error ) {
-        console.log( 'An error happened' );
+      function (error) {
+        console.log('An error happened');
       }
     );
   }
@@ -185,22 +230,36 @@ export class ModelThreeDService implements OnDestroy {
   }
 
   private initGround() {
+    // const groundSize = {
+    //   width: this.convertToUnit(10),
+    //   height: this.convertToUnit(0),
+    //   depth: this.convertToUnit(10)
+    // }
+    // const texture = new THREE.TextureLoader().load('assets/grasslight-big.jpg')
+    // texture.wrapS = THREE.RepeatWrapping
+    // texture.wrapT = THREE.RepeatWrapping
+    // texture.repeat.set(100, 100)
+    // const groundProperty = {
+    //   geometry: new THREE.BoxGeometry(groundSize.width, groundSize.height, groundSize.depth),
+    //   material: new THREE.MeshBasicMaterial({ map: texture }),
+    // }
+    // const ground = new THREE.Mesh(groundProperty.geometry, groundProperty.material)
+    // ground.position.x = 0
+    // ground.position.y = 0
+    // ground.position.z = 0
+    // this.scene.add(ground)
     const groundSize = {
       width: this.convertToUnit(10),
       height: this.convertToUnit(0),
       depth: this.convertToUnit(10)
     }
-    const texture = new THREE.TextureLoader().load('assets/grasslight-big.jpg')
-    texture.wrapS = THREE.RepeatWrapping
-    texture.wrapT = THREE.RepeatWrapping
-    texture.repeat.set(100, 100)
     const groundProperty = {
       geometry: new THREE.BoxGeometry(groundSize.width, groundSize.height, groundSize.depth),
-      material: new THREE.MeshBasicMaterial({ map: texture }),
+      material: new THREE.MeshBasicMaterial({ color: 0x2e2a2a }),
     }
     const ground = new THREE.Mesh(groundProperty.geometry, groundProperty.material)
     ground.position.x = 0
-    ground.position.y = 0
+    ground.position.y = -10
     ground.position.z = 0
     this.scene.add(ground)
   }
@@ -210,7 +269,7 @@ export class ModelThreeDService implements OnDestroy {
       this.camera.position.y = 2;
     }
   }
-  
+
   private onTick() {
     this.controls.update();
     this.detectCameraPosition();
@@ -219,5 +278,8 @@ export class ModelThreeDService implements OnDestroy {
     }
     window.requestAnimationFrame(() => this.onTick());
   }
+
+  
+  
 
 }

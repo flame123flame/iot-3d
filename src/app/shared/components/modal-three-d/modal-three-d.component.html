@@ -1,3 +1,6 @@
-<div class="engine-wrapper">
+<div class="three-d-container">
   <canvas #rendererCanvas id="renderCanvas"></canvas>
+  <div class="opacity-container">
+    <nz-slider [(ngModel)]="opacity" (ngModelChange)="onChangeOpacity($event)"></nz-slider>
+  </div>
 </div>
