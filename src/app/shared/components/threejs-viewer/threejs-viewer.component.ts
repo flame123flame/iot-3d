@@ -9,17 +9,15 @@ import { isPlatformBrowser } from '@angular/common';
   templateUrl: './threejs-viewer.component.html',
   styleUrl: './threejs-viewer.component.scss'
 })
-export class ThreejsViewerComponent implements AfterViewInit {
-  @ViewChild('container', { static: true }) container!: ElementRef<HTMLDivElement>;
+export class ThreejsViewerComponent  {
+  @ViewChild('rendererCanvas', {static: true})
+  public rendererCanvas!: ElementRef<HTMLCanvasElement>;
 
-  constructor(
-    private threeJsRendererService: ThreeJsRendererService,
-    @Inject(PLATFORM_ID) private platformId: Object
-  ) {}
+  public constructor(private engServ: ThreeJsRendererService) {
+  }
 
-  ngAfterViewInit(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      this.threeJsRendererService.initialize(this.container.nativeElement);
-    }
+  public ngOnInit(): void {
+    this.engServ.createScene(this.rendererCanvas);
+
   }
 }
