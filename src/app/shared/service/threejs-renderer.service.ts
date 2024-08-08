@@ -1,9 +1,8 @@
 import { Injectable, NgZone, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 @Injectable({
   providedIn: 'root'
@@ -15,7 +14,6 @@ export class ThreeJsRendererService {
   private controls!: OrbitControls;
   private spotLight!: THREE.SpotLight;
   private groundMesh!: THREE.Mesh;
-  private model!: THREE.Object3D; // ตัวแปรเก็บโมเดล
 
   constructor(private ngZone: NgZone, @Inject(PLATFORM_ID) private platformId: Object) { }
 
@@ -26,7 +24,7 @@ export class ThreeJsRendererService {
       this.setupControls();
       this.createGround();
       this.createLights();
-      this.loadOBJModel('assets/model.obj');
+      this.loadModel();
 
       window.addEventListener('resize', this.onWindowResize.bind(this), false);
 
@@ -87,49 +85,69 @@ export class ThreeJsRendererService {
     this.scene.add(this.spotLight);
   }
 
+  
   private loadOBJModel(path: string): void {
-    const loader = new OBJLoader();
-    
-    loader.load(
-      path,
-      (object) => {
-        this.model = object; // เก็บโมเดล
-        object.scale.set(1, 0.8, 1);
-        this.scene.add(object);
-        // this.animate(); // เรียกใช้งานการหมุน
-      },
-      undefined,
-      (error) => {
-        console.error('An error happened', error);
-      }
-    );
+ 
   }
 
   private loadModel(): void {
-    const loader = new GLTFLoader();
-    loader.load('assets/scene.gltf', (gltf) => {
-      console.log('loading model');
-      const mesh = gltf.scene;
 
-      mesh.traverse((child: any) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
+    const loader = new OBJLoader();
+    loader.load(
+     'assets/model.obj',
+      (object) => {
+
+        object.scale.set(0.6, 0.6, 0.6);
+
+        // Calculate the bounding box to find the center
+        const boundingBox = new THREE.Box3().setFromObject(object);
+        const center = new THREE.Vector3();
+        boundingBox.getCenter(center);
+        
+        // Move the object to the center of the scene
+        object.position.sub(center);
+        
+        this.scene.add(object);
+
+        const progressContainer = document.getElementById('progress-container');
+        if (progressContainer) {
+          progressContainer.style.display = 'none';
         }
-      });
+        // Log the position of the object
+        console.log('Model Position:', object.position);
 
-      mesh.position.set(0, 1.05, -1);
-      this.scene.add(mesh);
-
-      const progressContainer = document.getElementById('progress-container');
-      if (progressContainer) {
-        progressContainer.style.display = 'none';
+        // this.animate(); 
+      },
+      undefined,
+      // Called when loading has errors
+      function ( error ) {
+        console.log( 'An error happened' );
       }
-    }, (xhr) => {
-      console.log(`loading ${xhr.loaded / xhr.total * 100}%`);
-    }, (error) => {
-      console.error(error);
-    });
+    );
+
+
+    // const loader = new OBJLoader();
+    // loader.load('assets/model.obj', (object) => {
+    //   console.log('loading model');
+    //   object.traverse((child: any) => {
+    //     if (child.isMesh) {
+    //       child.castShadow = true;
+    //       child.receiveShadow = true;
+    //     }
+    //   });
+
+    //   object.position.set(0, 0, -1);
+    //   this.scene.add(object);
+
+    //   const progressContainer = document.getElementById('progress-container');
+    //   if (progressContainer) {
+    //     progressContainer.style.display = 'none';
+    //   }
+    // }, (xhr) => {
+    //   console.log(`loading ${xhr.loaded / xhr.total * 100}%`);
+    // }, (error) => {
+    //   console.error(error);
+    // });
   }
 
   private onWindowResize(): void {
