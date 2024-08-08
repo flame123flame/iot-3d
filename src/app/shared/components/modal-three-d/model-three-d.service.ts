@@ -41,7 +41,7 @@ export class ModelThreeDService implements OnDestroy {
       this.initializeScene();
       this.initializeCamera();
       this.initializeLight();
-      this.initGround();
+      // this.initGround();
       this.initializeControls();
       this.loadOBJModel('assets/model.obj');
       // this.animate();
@@ -102,30 +102,30 @@ export class ModelThreeDService implements OnDestroy {
     // directionalLight.position.set(10, 10, 10);
     // this.scene.add(directionalLight);
 
-      // Ambient light
-      this.light = new THREE.AmbientLight(0x404040); // Soft white light
-      this.scene.add(this.light);
-    
-      // Directional light (simulates sunlight)
-      const sunlight = new THREE.DirectionalLight(0xffffff, 1.0); // White light with intensity 1.0
-      sunlight.position.set(50, 50, 50); // Position the light
-      sunlight.castShadow = true; // Enable shadows
-    
-      // Configure the shadow properties for the sunlight
-      sunlight.shadow.mapSize.width = 2048; // Shadow map width
-      sunlight.shadow.mapSize.height = 2048; // Shadow map height
-      sunlight.shadow.camera.near = 0.5; // Near plane of shadow camera
-      sunlight.shadow.camera.far = 500; // Far plane of shadow camera
-    
-      this.scene.add(sunlight);
-    
-      // Add a helper to visualize the directional light
-      const lightHelper = new THREE.DirectionalLightHelper(sunlight, 5);
-      this.scene.add(lightHelper);
-    
-      // Add a helper to visualize the shadow camera
-      const shadowCameraHelper = new THREE.CameraHelper(sunlight.shadow.camera);
-      this.scene.add(shadowCameraHelper);
+    // Ambient light
+    this.light = new THREE.AmbientLight(0x404040); // Soft white light
+    this.scene.add(this.light);
+
+    // Directional light (simulates sunlight)
+    const sunlight = new THREE.DirectionalLight(0xffffff, 1.0); // White light with intensity 1.0
+    sunlight.position.set(50, 50, 50); // Position the light
+    sunlight.castShadow = true; // Enable shadows
+
+    // Configure the shadow properties for the sunlight
+    sunlight.shadow.mapSize.width = 2048; // Shadow map width
+    sunlight.shadow.mapSize.height = 2048; // Shadow map height
+    sunlight.shadow.camera.near = 0.5; // Near plane of shadow camera
+    sunlight.shadow.camera.far = 500; // Far plane of shadow camera
+
+    this.scene.add(sunlight);
+
+    // Add a helper to visualize the directional light
+    const lightHelper = new THREE.DirectionalLightHelper(sunlight, 5);
+    this.scene.add(lightHelper);
+
+    // Add a helper to visualize the shadow camera
+    const shadowCameraHelper = new THREE.CameraHelper(sunlight.shadow.camera);
+    this.scene.add(shadowCameraHelper);
   }
 
   convertToUnit(meter: number): number {
@@ -135,29 +135,29 @@ export class ModelThreeDService implements OnDestroy {
   degToRad(degrees: number): number {
     return degrees * (Math.PI / 180);
   }
-  
+
   private isAnimating = false;
 
   startCirculating() {
     this.isAnimating = true;
     const radius = 30;
     const speed = 0.0001;
-  
+
     const animate = (time: number) => {
       if (!this.isAnimating) {
         return;
       }
-  
+
       requestAnimationFrame(animate);
-  
-      const x = radius * Math.cos(speed * time);
-      const z = radius * Math.sin(-speed * time);
+
+      let x = radius * Math.cos(speed * time);
+      let z = radius * Math.sin(-speed * time);
       this.camera.position.set(x, this.camera.position.y, z);
       this.camera.lookAt(this.buildingModel.position);
-  
+
       this.renderer.render(this.scene, this.camera);
     };
-  
+
     animate(0);
   }
 
@@ -178,7 +178,7 @@ export class ModelThreeDService implements OnDestroy {
 
   private loadOBJModel(path: string): void {
     const loader = new OBJLoader();
-  
+
     loader.load(
       path,
       (object) => {
@@ -191,18 +191,18 @@ export class ModelThreeDService implements OnDestroy {
             item.material.opacity = 1;
           }
         });
-  
+
         // Calculate the bounding box to find the center
         const boundingBox = new THREE.Box3().setFromObject(object);
         const center = new THREE.Vector3();
         boundingBox.getCenter(center);
-  
+
         // Move the object to the center of the scene
         object.position.sub(center);
-  
+
         this.scene.add(object);
         // Start the animation loop
-        // this.startCirculating();
+        this.startCirculating();
       },
       undefined,
       function (error) {
@@ -298,6 +298,7 @@ export class ModelThreeDService implements OnDestroy {
   }
 
   private onTick() {
+    console.log(this.camera.position);
 
     this.controls.update();
     // this.detectCameraPosition();
@@ -305,7 +306,10 @@ export class ModelThreeDService implements OnDestroy {
     // document.addEventListener('mouseup', (event) => {
     //   this.startCirculating();
     // });
-    
+    // const minimumYLevel = -3.8; // Minimum Y level to prevent camera from looking below this
+    // this.camera.position.y = Math.max(this.camera.position.y, minimumYLevel);
+    // this.camera.lookAt(new THREE.Vector3());
+
     if (this.renderer) {
       this.renderer.render(this.scene, this.camera);
     }
