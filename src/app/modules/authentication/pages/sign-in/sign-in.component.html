@@ -1,11 +1,9 @@
-
-
-  <nz-tabset>
+<nz-tabset [nzSelectedIndex]="1">
     <nz-tab nzTitle="เฟรม">      
-          <app-threejs-viewer></app-threejs-viewer>
-        </nz-tab>
+      <app-threejs-viewer></app-threejs-viewer>
+    </nz-tab>
     <nz-tab nzTitle="โอปอ">
-        <app-engine></app-engine>
+      <app-engine></app-engine>
     </nz-tab>
     <nz-tab nzTitle="หนุ่ย กู้ภัย">
       <app-modal-three-d></app-modal-three-d>

@@ -15,7 +15,7 @@ export class EngineService implements OnDestroy {
   private frameId?: number;
   private model!: THREE.Object3D; // ตัวแปรเก็บโมเดล
 
-  constructor(private ngZone: NgZone, @Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(private ngZone: NgZone, @Inject(PLATFORM_ID) private platformId: Object) { }
 
   ngOnDestroy(): void {
     if (isPlatformBrowser(this.platformId)) {
@@ -39,7 +39,6 @@ export class EngineService implements OnDestroy {
       this.initializeScene();
       this.initializeCamera();
       this.initializeLight();
-      // this.initGround();
       this.initializeControls();
       this.loadOBJModel('assets/model.obj');
       // this.animate();
@@ -55,13 +54,13 @@ export class EngineService implements OnDestroy {
       antialias: true,
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setClearColor(0x8B4513, 0); 
+    this.renderer.setClearColor(0x93CCEA);
   }
 
   private initializeScene(): void {
     this.scene = new THREE.Scene();
   }
-  
+
   mainUnit = 0.01;
   near = this.convertToUnit(this.mainUnit);
   far = this.convertToUnit(10000);
@@ -74,21 +73,21 @@ export class EngineService implements OnDestroy {
     const aspect = window.innerWidth / window.innerHeight;
     const near = this.near;
     const far = this.far;
-  
+
     this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this.camera.position.set(-120, 100, 140);
+    this.camera.position.set(0, 0, 100);
     this.scene.add(this.camera);
   }
 
   private initializeLight(): void {
     this.light = new THREE.AmbientLight(0x404040);
     this.scene.add(this.light);
-  
+
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(10, 10, 10);
     this.scene.add(directionalLight);
   }
-  
+
   convertToUnit(meter: number): number {
     return meter / this.mainUnit;
   }
@@ -110,7 +109,7 @@ export class EngineService implements OnDestroy {
 
   private loadOBJModel(path: string): void {
     const loader = new OBJLoader();
-    
+
     loader.load(
       path,
       (object) => {
@@ -121,21 +120,22 @@ export class EngineService implements OnDestroy {
         const boundingBox = new THREE.Box3().setFromObject(object);
         const center = new THREE.Vector3();
         boundingBox.getCenter(center);
-        
+
         // Move the object to the center of the scene
         object.position.sub(center);
-        
+
         this.scene.add(object);
 
         // Log the position of the object
         console.log('Model Position:', object.position);
 
         // this.animate(); // เรียกใช้งานการหมุน
+        this.initGround(); // เรียกใช้งานหญ้า
       },
       undefined,
       // Called when loading has errors
-      function ( error ) {
-        console.log( 'An error happened' );
+      function (error) {
+        console.log('An error happened');
       }
     );
   }
@@ -198,26 +198,27 @@ export class EngineService implements OnDestroy {
       geometry: new THREE.BoxGeometry(groundSize.width, groundSize.height, groundSize.depth),
       material: new THREE.MeshBasicMaterial({ map: texture }),
     }
+
     const ground = new THREE.Mesh(groundProperty.geometry, groundProperty.material)
     ground.position.x = 0
-    ground.position.y = 0
+    ground.position.y = this.model.position.y
     ground.position.z = 0
     this.scene.add(ground)
   }
 
-  private detectCameraPosition() {
-    if (this.camera.position.y < 2) {
-      this.camera.position.y = 2;
-    }
-  }
-  
   private onTick() {
     this.controls.update();
-    this.detectCameraPosition();
+    const minimumYLevel = -3.8; // Minimum Y level to prevent camera from looking below this
+    this.camera.position.y = Math.max(this.camera.position.y, minimumYLevel);
+    this.camera.lookAt(new THREE.Vector3());
+
     if (this.renderer) {
       this.renderer.render(this.scene, this.camera);
     }
+
     window.requestAnimationFrame(() => this.onTick());
   }
+
+
 
 }
