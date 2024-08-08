@@ -39,7 +39,7 @@ export class EngineService implements OnDestroy {
       this.initializeScene();
       this.initializeCamera();
       this.initializeLight();
-      this.initGround();
+      // this.initGround();
       this.initializeControls();
       this.loadOBJModel('assets/model.obj');
       // this.animate();
@@ -114,14 +114,28 @@ export class EngineService implements OnDestroy {
     loader.load(
       path,
       (object) => {
-        this.model = object; // เก็บโมเดล
-        object.scale.set(1, 0.8, 1);
+        this.model = object;
+        object.scale.set(0.6, 0.6, 0.6);
+
+        // Calculate the bounding box to find the center
+        const boundingBox = new THREE.Box3().setFromObject(object);
+        const center = new THREE.Vector3();
+        boundingBox.getCenter(center);
+        
+        // Move the object to the center of the scene
+        object.position.sub(center);
+        
         this.scene.add(object);
+
+        // Log the position of the object
+        console.log('Model Position:', object.position);
+
         // this.animate(); // เรียกใช้งานการหมุน
       },
       undefined,
-      (error) => {
-        console.error('An error happened', error);
+      // Called when loading has errors
+      function ( error ) {
+        console.log( 'An error happened' );
       }
     );
   }
