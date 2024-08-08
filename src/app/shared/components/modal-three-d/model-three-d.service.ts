@@ -135,6 +135,35 @@ export class ModelThreeDService implements OnDestroy {
   degToRad(degrees: number): number {
     return degrees * (Math.PI / 180);
   }
+  
+  private isAnimating = false;
+
+  startCirculating() {
+    this.isAnimating = true;
+    const radius = 30;
+    const speed = 0.0001;
+  
+    const animate = (time: number) => {
+      if (!this.isAnimating) {
+        return;
+      }
+  
+      requestAnimationFrame(animate);
+  
+      const x = radius * Math.cos(speed * time);
+      const z = radius * Math.sin(-speed * time);
+      this.camera.position.set(x, this.camera.position.y, z);
+      this.camera.lookAt(this.buildingModel.position);
+  
+      this.renderer.render(this.scene, this.camera);
+    };
+  
+    animate(0);
+  }
+
+  stopCirculating() {
+    this.isAnimating = false;
+  }
 
   private initializeControls(): void {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -149,7 +178,7 @@ export class ModelThreeDService implements OnDestroy {
 
   private loadOBJModel(path: string): void {
     const loader = new OBJLoader();
-
+  
     loader.load(
       path,
       (object) => {
@@ -162,23 +191,20 @@ export class ModelThreeDService implements OnDestroy {
             item.material.opacity = 1;
           }
         });
+  
         // Calculate the bounding box to find the center
         const boundingBox = new THREE.Box3().setFromObject(object);
         const center = new THREE.Vector3();
         boundingBox.getCenter(center);
-
+  
         // Move the object to the center of the scene
         object.position.sub(center);
-
+  
         this.scene.add(object);
-
-        // Log the position of the object
-        console.log('Model Position:', object.position);
-
-        // this.animate(); // เรียกใช้งานการหมุน
+        // Start the animation loop
+        // this.startCirculating();
       },
       undefined,
-      // Called when loading has errors
       function (error) {
         console.log('An error happened');
       }
@@ -248,6 +274,7 @@ export class ModelThreeDService implements OnDestroy {
     // ground.position.y = 0
     // ground.position.z = 0
     // this.scene.add(ground)
+
     const groundSize = {
       width: this.convertToUnit(10),
       height: this.convertToUnit(0),
@@ -271,15 +298,18 @@ export class ModelThreeDService implements OnDestroy {
   }
 
   private onTick() {
+
     this.controls.update();
-    this.detectCameraPosition();
+    // this.detectCameraPosition();
+    // document.addEventListener('mousedown', (event) => this.stopCirculating())
+    // document.addEventListener('mouseup', (event) => {
+    //   this.startCirculating();
+    // });
+    
     if (this.renderer) {
       this.renderer.render(this.scene, this.camera);
     }
     window.requestAnimationFrame(() => this.onTick());
   }
-
-  
-  
 
 }
