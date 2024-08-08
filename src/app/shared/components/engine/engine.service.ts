@@ -208,7 +208,7 @@ export class EngineService implements OnDestroy {
 
   private onTick() {
     this.controls.update();
-    const minimumYLevel = -3.8; // Minimum Y level to prevent camera from looking below this
+    const minimumYLevel = 0.03 * this.fov -5.6; // Minimum Y level to prevent camera from looking below this
     this.camera.position.y = Math.max(this.camera.position.y, minimumYLevel);
     this.camera.lookAt(new THREE.Vector3());
 
